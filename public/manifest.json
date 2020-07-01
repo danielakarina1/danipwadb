@@ -1,0 +1,25 @@
+{
+    "short_name": "danipwadb",
+    "name": "Registro de Alumnos",
+    "start_url": "/index.html",
+    "display": "standalone",
+    "background_color": "#FBDAFF",
+    "theme_color": "#E4B0EB",
+    "icons": [
+      {
+        "src": "img/icono-2048.png",
+        "sizes": "2048x2048",
+        "type": "image/png"
+      },
+      {
+        "src": "img/icono-1024.png",
+        "sizes": "1024x1024",
+        "type": "image/png"
+      },
+      {
+        "src": "img/icono-256.png",
+        "sizes": "256x256",
+        "type": "image/png"
+      }
+    ]
+  }

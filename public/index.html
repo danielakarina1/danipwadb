@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Directorio de Alumnos</title>
+    <script>
+      /* invoca a registraServiceWorker instalar la aplicación en el caché del
+       * navegador. No se espera a que termine el registro. */
+      registraServiceWorker();
+      /** Registra un service worker para instalar la aplicación en el
+       * caché del navegador. La palabra reservada async indica que no espera
+       * a que termine y libera el registro de activación que lo llamó. */
+      async function registraServiceWorker() {
+        if ("serviceWorker" in navigator) {
+          try {
+            /* Registra el service worker y espera que termine. El service
+             * worker debe estar en la carpeta public. La palabra await indica
+             * que espera a que termine y solo puede usarse en una función
+             * async. */
+            const registro = await navigator.serviceWorker.register("sw.js");
+            // Registro correcto y se muestra en la consola.
+            console.log("Service Worker registrado.");
+            console.log(registro);
+          } catch (e) {
+            // Hubo un error en el registro.
+            muestraError(e);
+          }
+        }
+      }
+      /** Procesa una excepción y muestra un mensaje de error.
+       * @param {Error} e descripción del error. */
+      function muestraError(e) {
+        console.log(e);
+        alert(e.message);
+      }
+    </script>
+
+    <!-- Ícono para la página web. Debe ponerse en la raíz de la página. -->
+    <link rel="icon" sizes="32x32" href="favicon.ico">
+
+    <!-- Color de la barra de navegación de Chrome en dispositivos móviles. -->
+    <meta name="theme-color" content="#E4B0EB">
+
+    <!-- Configuración de la PWA: Chrome y Edge. -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Configuración para Web Clip en Safari. -->
+    <meta name="apple-mobile-web-app-title" content="danipwadb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="apple-touch-icon" href="img/icono-2048.png">
+    <link rel="apple-touch-icon" sizes="256x256" href="img/icono-256.png">
+    <link rel="apple-touch-icon" sizes="1024x1024" href="img/icono-1024.png">
+    <link rel="apple-touch-icon" sizes="2048x2048" href="img/icono-2048.png">
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+   <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+    <script type="module" src="cmp/mi-footer.js"></script>
+    <link rel="stylesheet" href="css/estilos.css">
+
+    <!-- Carga el núcleo de Firebase. Actualiza los números de versión cuando
+    sea necesario. Hemos quitado el atributo defer que aparecía originalmente.
+    -->
+    <script src="/__/firebase/7.15.5/firebase-app.js"></script>
+    <!-- Solo incluye las características de Firebase que necesites.s -->
+    <script src="/__/firebase/7.15.5/firebase-auth.js"></script>
+    <script src="/__/firebase/7.15.5/firebase-firestore.js"></script>
+    <script src="/__/firebase/7.15.5/firebase-storage.js"></script>
+    <!-- Carga la configuración de tu proyecto en el servidor de Firebase. -->
+    <script src="/__/firebase/init.js"></script>
+
+  </head>
+  <body>
+    <form action="javascript:guarda()">
+      <header>
+        <h1 class="head">Directorio de Alumnos</h1>
+        <button id="agregar" type="button"
+         onclick="alta();"><span class="material-icons md-light">add</span></button>
+        <button class="button" type="submit"><span class="material-icons md-light">save</span></button>
+        <button class="button" id="eliminar" type="button"
+          onclick="elimina();"><span class="material-icons md-light">delete</span></button>
+      </header>
+      <div class="campo">
+      <p><input id="nombre" type="text" placeholder="Nombre" required></p>
+      <label for="nombre"><b>Nombre del Alumno:</b></label>
+      </div>
+      <div class="campo">
+      <p><input id="matricula" type="text" placeholder="Matricula" required></p>
+      <label for="matricula"><b>Matricula:</b></label>
+      </div>
+      <div class="campo">
+      <p><input id="telefono" type="text" placeholder="Telefono" required></p>
+      <label for="telefono"><b>Telefono:</b></label>
+      </div>
+      <div class="campo">
+      <p><input id="correo" type="text" placeholder="E-Mail" required></p>
+      <label for="correo"><b>Correo:</b></label>
+    </div>
+      <ul id="lista">
+        <li><progress max="100">Cargando…</progress></li>
+      </ul>
+      <mi-footer></mi-footer>
+    </form>
+
+    <script>
+      /** Id del objeto seleccionado en la lista. */
+      let id = "";
+      const firestore = firebase.firestore();
+      muestraLista();
+      alta();
+      function muestraLista() {
+        /* Pide todos los registros de la colección "PASATIEMPO" ordenados por
+         * el campo "PAS_NOMBRE" de forma ascendente. */
+        firestore.collection("ALUMNO").orderBy("ALU_NOMBRE").onSnapshot(
+          documentos => {
+            let inner = "";
+            documentos.forEach(doc =>
+              inner += /* html */
+              `<li>
+                
+                  ${cod(doc.data().ALU_NOMBRE)} <br>
+                  ${cod(doc.data().ALU_MATRICULA)}<br>
+                  ${cod(doc.data().ALU_TELEFONO)}<br>
+                  ${cod(doc.data().ALU_CORREO)}<br>
+                  <button type=button onclick="muestra('${cod(doc.id)}')">Editar</button>
+               
+              </li>`);
+            lista.innerHTML = inner;
+          },
+          e => {
+            procesaError(e);
+            muestraLista();
+          }
+        );
+      }
+      /** Prepara la forma para capturar un pasatiempo nuevo. */
+      function alta() {
+        agregar.disabled = true; // Deshabilita el botón "agregar".
+        eliminar.disabled = true; // Deshabilita el botón "eliminar".
+        id = ""; // Pone en blanco el id, porque todavía no agregamos a la BD.
+        nombre.value = ""; // Pone en blanco los datos porque todavía no hay.
+        matricula.value="";
+        telefono.value="";
+        correo.value="";
+      }
+      /** Prepara la forma para modificar el documento que corresponde al
+       * id seleccionado en el listado.
+       * @param {string} idSel id del documento seleccionado en el listado. */
+      async function muestra(idSel) {
+        try {
+          agregar.disabled = false; // Habilita el botón "agregar".
+          eliminar.disabled = false; // Habilita el botón "eliminar".
+          /* Recupera el documento con el id seleccionado en la colección
+           * "PASATIEMPO". */
+          let doc = await firestore.collection("ALUMNO").doc(idSel).get();
+          if (doc.exists) {
+            id = doc.id;
+            let data = doc.data();
+            nombre.value = data.ALU_NOMBRE || "";
+            matricula.value = data.ALU_MATRICULA || "";
+            telefono.value = data.ALU_TELEFONO || "";
+            correo.value = data.ALU_CORREO || "";
+          } else {
+            alert("El alumno selecionado no está registrado.");
+            alta();
+          }
+        } catch (e) {
+          procesaError(e);
+        }
+      }
+      async function guarda() {
+        try {
+          const modelo = {
+            ALU_NOMBRE: nombre.value.trim(),
+            ALU_MATRICULA: matricula.value.trim(),
+            ALU_TELEFONO: telefono.value.trim(),
+            ALU_CORREO: correo.value.trim()
+          };
+          if (id) {
+            /* Modifica el modelo en la base de datos en base al id y espera a
+             * que termine. */
+            await firestore.collection("ALUMNO").doc(id).set(modelo);
+          } else {
+            /* Agrega el modelo a la base de datos, genera automáticamente el
+             * id y espera a que termine. */
+            await firestore.collection("ALUMNO").add(modelo);
+          }
+          alta();
+        } catch (e) {
+          procesaError(e);
+        }
+      }
+      async function elimina() {
+        try {
+          /* Elimina el documento en la base de datos usando el id y espera a
+           * que termine. */
+          await firestore.collection("ALUMNO").doc(id).delete();
+          alta();
+        } catch (e) {
+          procesaError(e);
+        }
+      }
+      function procesaError(e) {
+        console.log(e);
+        alert(e.message);
+      }
+      /** Codifica la información textual para que no inyecte código HTML.
+       * @param {any} valor información a codificar.
+       * @returns {string} el texto transformado. */
+      function cod(valor) {
+        return (valor || "").toString()
+          .replace(/[<>"']/g,
+            /** @param {string} letra */
+            letra => {
+              switch (letra) {
+                case "<": return "&lt;";
+                case ">": return "&gt;";
+                case '"': return "&quot;";
+                case "'": return "&#039;";
+                default: return letra;
+              }
+            });
+      }
+    </script>
+
+    <script>
+      try {
+        let app = firebase.app();
+        let apis = ["auth", "firestore", "storage"]
+          .filter(api => typeof app[api] === "function");
+        
+      } catch (e) {
+        muestraError(e);
+      }
+    </script>
+  </body>
+</html>
